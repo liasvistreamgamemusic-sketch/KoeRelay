@@ -102,19 +102,31 @@ def main() -> int:
         tray.prepare("STT")
 
         tts = TTSManager(cfg.tts, cfg.audio)
-        tts.on_ready = lambda: tray.mark_ready("音声")
+        holder["tts"] = tts
+
+        def on_tts_ready() -> None:
+            # ウォームアップ後: 準備完了 + サーバ接続状態を通知(未接続なら警告)。
+            tray.set_tts_status(tts.health())
+            tray.mark_ready("音声")
+
+        tts.on_ready = on_tts_ready
 
         # Whisper モデルのロード(重い)は別スレッドで。完了後に STT を ready に。
         def load_stt() -> None:
             recognizer = Recognizer(cfg.stt)
+            recognizer.warmup()  # 初回の文字起こし遅延を起動時に先取り
             pipeline = RelayPipeline(cfg, recognizer, tts)
             pipeline.on_state = tray.set_state
+            pipeline.on_text = lambda t: _on_transcribed(tray, t)
             pipeline.enabled = tray._enabled
             holder["pipeline"] = pipeline
 
             tray.on_toggle = pipeline.set_enabled
             tray.on_mode = pipeline.set_mode
             tray.set_mode_ui(pipeline.mode)
+            # モニタ出力トグル: cfg.audio は player と共有オブジェクトなので即反映される。
+            tray.on_monitor = lambda on: setattr(cfg.audio, "monitor_enabled", on)
+            tray.on_test = lambda: _test_speak(tts, tray)
 
             # ホットキー(PTT用)。VADモードでも常駐させ、実行時のモード切替に備える。
             if cfg.hotkey.enabled:
@@ -153,10 +165,37 @@ def main() -> int:
         pipeline = holder.get("pipeline")
         if pipeline:
             pipeline.stop()
-            pipeline.tts.stop()
+        # TTS(サーバ自動起動していれば pkill 等で停止)。pipeline 未完成でも確実に止める。
+        tts = holder.get("tts")
+        if tts:
+            tts.stop()
 
     app.aboutToQuit.connect(shutdown)
     return app.exec()
+
+
+def _on_transcribed(tray, text: str) -> None:  # noqa: ANN001
+    """文字起こし結果をトレイに反映。空なら「認識できず」を通知(動作確認しやすく)。"""
+    if text:
+        tray.set_status_text(f"認識: {text[:30]}")
+    else:
+        tray.notify("音声を認識できませんでした",
+                    "もう一度ゆっくり話すか、入力マイクを確認してください。")
+
+
+def _test_speak(tts, tray) -> None:  # noqa: ANN001
+    """テスト発話。サーバ未接続なら警告、接続していれば固定文を合成・再生。"""
+    import threading
+
+    def work() -> None:
+        if not tts.health():
+            tray.set_tts_status(False)
+            return
+        tray.notify("テスト発話", "「テストです」を今の声で再生します。"
+                    "聞こえない場合はモニター出力をONにするか出力デバイスを確認してください。")
+        tts.speak("テストです。この声が聞こえていますか。")
+
+    threading.Thread(target=work, daemon=True).start()
 
 
 def _warn_if_no_cable(pipeline, tray) -> None:  # noqa: ANN001

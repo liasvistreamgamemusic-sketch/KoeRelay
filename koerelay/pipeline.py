@@ -113,6 +113,12 @@ class RelayPipeline:
 
     def _process(self, audio: np.ndarray, samplerate: int) -> None:
         try:
+            # マイクが本当に音を拾えているか診断できるよう長さと音量(RMS)を記録。
+            dur = len(audio) / samplerate if samplerate else 0.0
+            rms = float(np.sqrt(np.mean(audio ** 2))) if audio.size else 0.0
+            log.info("録音 %.1f秒 rms=%.4f を文字起こし中…", dur, rms)
+            if rms < 0.001:
+                log.warning("入力音量がほぼ0です。マイク(入力デバイス)を確認してください。")
             # VADモードでは区間が連続で届きうる。モデルへの同時呼び出しを避けて直列化。
             with self._stt_lock:
                 text = self.rec.transcribe(audio, samplerate)

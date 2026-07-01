@@ -44,6 +44,8 @@ class TrayApp(QObject):
         self.on_stay_running: Callable[[], None] | None = None  # 通常起動でサービス開始
         self.on_toggle: Callable[[bool], None] | None = None    # ON/OFF 切替
         self.on_mode: Callable[[str], None] | None = None       # 'ptt' / 'vad' 切替
+        self.on_monitor: Callable[[bool], None] | None = None   # モニタ出力 ON/OFF
+        self.on_test: Callable[[], None] | None = None          # テスト発話
         self._pending = set()   # 準備待ちのコンポーネント("音声"等)
         self._ready = False     # 全コンポーネント準備完了 = 利用可能
         self._enabled = True
@@ -104,10 +106,21 @@ class TrayApp(QObject):
             mode_menu.addAction(a)
         self.act_mode_ptt.setChecked(True)
 
+        # モニタ出力(実スピーカーへも同時再生)ON/OFF。既定は config の値。
+        self.act_monitor = QAction("モニター出力(スピーカー)", self._menu, checkable=True)
+        self.act_monitor.setChecked(bool(self.cfg.audio.monitor_enabled))
+        self.act_monitor.triggered.connect(self._toggle_monitor)
+        self._menu.addAction(self.act_monitor)
+
         self.act_toggle = QAction("有効", self._menu, checkable=True)
         self.act_toggle.setChecked(True)
         self.act_toggle.triggered.connect(self._toggle)
         self._menu.addAction(self.act_toggle)
+        self._menu.addSeparator()
+
+        self.act_test = QAction("テスト発話(動作確認)", self._menu)
+        self.act_test.triggered.connect(lambda: self.on_test and self.on_test())
+        self._menu.addAction(self.act_test)
 
         self.act_check = QAction("アップデートを確認…", self._menu)
         self.act_check.triggered.connect(lambda: self.check_updates(manual=True))
@@ -131,10 +144,30 @@ class TrayApp(QObject):
         self.tray.showMessage("モード変更", f"{label} に切り替えました",
                               QSystemTrayIcon.Information, 2500)
 
+    def _toggle_monitor(self, checked: bool) -> None:
+        if self.on_monitor:
+            self.on_monitor(checked)
+        self.notify("モニター出力", "スピーカーへも同時再生します" if checked
+                    else "スピーカーへの再生を止めました")
+
     def set_mode_ui(self, mode: str) -> None:
         """外部(pipeline)の現在モードにメニューのチェックを合わせる。"""
         self.act_mode_ptt.setChecked(mode == "ptt")
         self.act_mode_vad.setChecked(mode == "vad")
+
+    def notify(self, title: str, msg: str, warn: bool = False) -> None:
+        icon = QSystemTrayIcon.Warning if warn else QSystemTrayIcon.Information
+        self.tray.showMessage(title, msg, icon, 4000)
+
+    def set_tts_status(self, ok: bool) -> None:
+        """TTSサーバ接続状態を通知(未接続なら警告)。"""
+        if not ok:
+            self.notify(
+                "TTSサーバ未接続",
+                "音声合成サーバ(既定 127.0.0.1:8088)に接続できません。"
+                "Irodori-TTS-Server を起動してください。",
+                warn=True,
+            )
 
     # ---- 準備状況(いつ話せるか) ------------------------------------
     def prepare(self, component: str) -> None:

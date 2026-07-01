@@ -39,6 +39,17 @@ class Recognizer:
     def available(self) -> bool:
         return self._model is not None
 
+    def warmup(self) -> None:
+        """無音を1回流してモデルの初回実行コスト(JIT/初期化)を先に消化する。"""
+        if self._model is None:
+            return
+        try:
+            silence = np.zeros(16000, dtype="float32")  # 1秒の無音
+            self._run(silence)
+            log.info("STT ウォームアップ完了")
+        except Exception as e:
+            log.info("STT ウォームアップ skip: %s", e)
+
     def transcribe(self, audio: np.ndarray, samplerate: int) -> str:
         """float32 mono [-1,1] の音声を文字起こし。失敗/空なら ""。"""
         if self._model is None or audio.size == 0:

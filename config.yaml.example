@@ -22,9 +22,14 @@ tts:
   voice: sumire           # 参照音声(TTSサーバ側に登録した voice 名)
   speed: 1.0
   response_format: wav
-  # サーバ自動起動(任意)。WSL上のサーバを起動する例:
-  autostart_server: false
-  # server_cmd: ["wsl","-d","Ubuntu","--","bash","-lc","cd ~/github/KoeRelay/Irodori-TTS-Server && ./start.sh"]
+  # サーバ自動起動(任意)。true にすると KoeRelay 起動時に下の server_cmd で
+  # TTSサーバを立ち上げ、終了時に自動停止します(自分で起動したときのみ pkill)。
+  # 既に起動済みのサーバがあればそれを使い、二重起動も勝手な停止もしません。
+  autostart_server: true
+  # WSL(Ubuntu-24.04)上のサーバを起動する例。distro 名は `wsl -l -q` で確認:
+  server_cmd: ["wsl","-d","Ubuntu-24.04","--","bash","-lc","cd ~/github/KoeRelay/Irodori-TTS-Server && ./start.sh"]
+  # 終了時の停止コマンド(未指定なら wsl 起動時は自動で pkill -f irodori_openai_tts):
+  # stop_cmd: ["wsl","-d","Ubuntu-24.04","--","bash","-lc","pkill -f irodori_openai_tts"]
   warmup: true            # 起動時にダミー合成して初回発話を速くする
 
 audio:

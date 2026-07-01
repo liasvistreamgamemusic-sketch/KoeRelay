@@ -31,6 +31,10 @@ class TTSManager:
         self.on_start: Callable[[], None] | None = None    # 再生開始通知(UI表示用)
         self.on_end: Callable[[], None] | None = None      # 再生終了通知
 
+    def health(self) -> bool:
+        """TTSサーバに接続できるか。"""
+        return self.backend.health()
+
     def start(self) -> None:
         if not self.cfg.enabled:
             if self.on_ready:
