@@ -40,9 +40,16 @@ class STTConfig:
     min_record_sec: float = 0.3    # これ未満の押下/発話は誤爆として無視
     # トリガー方式: ptt(ホットキー長押し) | vad(常時リスニング、無音で自動区切り)
     mode: str = "ptt"
-    vad_aggressiveness: int = 2    # webrtcvad の攻めどころ 0-3(大きいほど発話判定が厳しい)
+    vad_aggressiveness: int = 3    # webrtcvad の攻めどころ 0-3(大きいほど発話判定が厳しい=雑音に強い)
     vad_silence_ms: int = 600      # この長さの無音で発話区間を確定(短いほど低遅延)
     vad_ignore_while_speaking: bool = True  # 発話中(TTS再生中)は取り込まない(エコー防止)
+    # 幻聴(hallucination)対策: 環境音をSTTに渡さないためのゲート(VADモードのみ)。
+    vad_min_speech_ms: int = 300   # 実際に発話と判定されたフレーム量がこれ未満の区間は破棄
+    vad_min_rms: float = 0.02      # 区間全体の音量(RMS)がこれ未満は無音/雑音として破棄
+    # 幻聴対策は上のVADゲート(発話量+音量)が本命。ブロックリストは既定で空
+    # (本物の「ありがとうございました」まで消さないため)。どうしても特定フレーズが
+    # 残る場合だけ、config で完全一致フレーズを足して破棄できる(任意)。
+    hallucination_blocklist: list[str] = field(default_factory=list)
 
 
 @dataclass

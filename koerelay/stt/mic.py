@@ -122,8 +122,10 @@ class MicRecorder:
         frame_len = int(sr * frame_ms / 1000)
         silence_limit = max(1, int(self.stt.vad_silence_ms / frame_ms))
         min_frames = int(self.stt.min_record_sec * 1000 / frame_ms)
+        min_voiced_frames = max(1, int(self.stt.vad_min_speech_ms / frame_ms))
         buf: list[np.ndarray] = []
         silence = 0
+        voiced = 0        # 実際に発話と判定されたフレーム数(幻聴対策)
         speaking = False
         try:
             device = resolve_input_device(self._sd, self.audio.input_device)
@@ -141,19 +143,35 @@ class MicRecorder:
                     if _is_speech(mono, vad, sr):
                         buf.append(mono.copy())
                         speaking = True
+                        voiced += 1
                         silence = 0
                     elif speaking:
                         buf.append(mono.copy())
                         silence += 1
                         if silence >= silence_limit:
                             audio = np.concatenate(buf) if buf else None
-                            buf, speaking, silence = [], False, 0
-                            if audio is not None and len(audio) >= min_frames * frame_len:
-                                self.on_audio(audio, sr)
+                            v = voiced
+                            buf, speaking, silence, voiced = [], False, 0, 0
+                            self._maybe_emit(audio, sr, v, min_voiced_frames,
+                                             min_frames * frame_len)
         except Exception as e:
             log.warning("VAD ループ終了: %s", e)
         finally:
             self._vad_running = False
+
+    def _maybe_emit(self, audio, sr, voiced_frames, min_voiced_frames, min_len) -> None:  # noqa: ANN001
+        """幻聴対策のゲート: 十分な発話量と音量がある区間だけ STT へ渡す。"""
+        if audio is None or len(audio) < min_len:
+            return
+        if voiced_frames < min_voiced_frames:
+            log.info("VAD: 発話量不足(voiced=%d < %d)→ 破棄(環境音とみなす)",
+                     voiced_frames, min_voiced_frames)
+            return
+        rms = float(np.sqrt(np.mean(audio ** 2))) if audio.size else 0.0
+        if rms < self.stt.vad_min_rms:
+            log.info("VAD: 音量不足(rms=%.4f < %.4f)→ 破棄", rms, self.stt.vad_min_rms)
+            return
+        self.on_audio(audio, sr)
 
     def stop(self) -> None:
         self._recording = False

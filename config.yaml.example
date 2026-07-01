@@ -21,9 +21,13 @@ stt:
   samplerate: 16000
   min_record_sec: 0.3     # これ未満の短い押下/発話は誤爆として無視
   mode: ptt               # ptt(ホットキー長押し) | vad(常時リスニング)。トレイからも切替可
-  vad_aggressiveness: 2   # 0-3。大きいほど発話判定が厳しい(雑音に強い)
+  vad_aggressiveness: 3   # 0-3。大きいほど発話判定が厳しい(環境音を拾いにくい)
   vad_silence_ms: 600     # この無音で発話区間を確定(短いほど低遅延・誤爆増)
   vad_ignore_while_speaking: true  # 発話中(TTS再生中)は取り込まない(エコー防止)
+  # 幻聴(環境音の誤認識)対策の本命。実発話量と音量が足りない区間はSTTに渡さない:
+  vad_min_speech_ms: 300  # 実際に発話と判定された量がこれ未満の区間は破棄
+  vad_min_rms: 0.02       # 区間音量がこれ未満は破棄(まだ拾うなら 0.03〜0.05 に)
+  # hallucination_blocklist: []  # 任意。完全一致フレーズを破棄(既定は空=本物は消さない)
 
 tts:
   enabled: true

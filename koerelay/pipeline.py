@@ -21,6 +21,11 @@ from .tts.manager import TTSManager
 log = logging.getLogger(__name__)
 
 
+def _norm_text(s: str) -> str:
+    """比較用の正規化: 前後空白と末尾の句読点(。.!?！?、…)を除去。"""
+    return s.strip().strip("。.!?！?、… 　")
+
+
 class State(str, Enum):
     IDLE = "待機中"
     RECORDING = "録音中"
@@ -45,6 +50,8 @@ class RelayPipeline:
         self.mode = cfg.stt.mode if cfg.stt.mode in ("ptt", "vad") else "ptt"
         self._speaking = False
         self._stt_lock = threading.Lock()  # 文字起こしの同時実行を防ぐ(VAD連続区間対策)
+        # Whisper幻聴フレーズの正規化集合(末尾の句読点や空白を無視して完全一致で破棄)。
+        self._blockset = {_norm_text(s) for s in cfg.stt.hallucination_blocklist}
         # TTS の再生開始/終了で状態表示を切り替える
         self.tts.on_start = self._on_speak_start
         self.tts.on_end = self._on_speak_end
@@ -123,6 +130,10 @@ class RelayPipeline:
             with self._stt_lock:
                 text = self.rec.transcribe(audio, samplerate)
             log.info("文字起こし: %r", text)
+            # 任意のブロックリスト(既定は空)に完全一致したら幻聴とみなし破棄。
+            if text and self._blockset and _norm_text(text) in self._blockset:
+                log.info("ブロックリスト一致 → 破棄: %r", text)
+                text = ""
             if self.on_text:
                 self.on_text(text)
             if text:
