@@ -139,8 +139,13 @@ def main() -> int:
             tray.on_monitor = lambda on: setattr(cfg.audio, "monitor_enabled", on)
             tray.on_test = lambda: _test_speak(tts, tray)
 
-            # ホットキー(PTT用)。VADモードでも常駐させ、実行時のモード切替に備える。
-            if cfg.hotkey.enabled:
+            # ホットキー(PTT用)を(再)起動する関数。設定変更時に付け替えられる。
+            def restart_hotkey() -> None:
+                old = holder.pop("hotkey", None)
+                if old:
+                    old.stop()
+                if not cfg.hotkey.enabled:
+                    return
                 from .hotkey import HotkeyListener
                 hk = HotkeyListener(
                     cfg.hotkey.key,
@@ -151,6 +156,11 @@ def main() -> int:
                     holder["hotkey"] = hk
                 else:
                     log.warning("ホットキーを開始できませんでした(pynput未導入?)")
+
+            restart_hotkey()
+
+            # 設定画面: 保存時に即時反映(モード/モニタUI/ホットキー付け替え)。
+            tray.on_settings = lambda: _open_settings(cfg, pipeline, tray, restart_hotkey)
 
             pipeline.start()  # 設定モード(既定PTT / vadなら常時リスニング)で開始
             _warn_if_no_cable(pipeline, tray)
@@ -196,6 +206,27 @@ def _on_transcribed(tray, text: str) -> None:  # noqa: ANN001
     else:
         tray.notify("音声を認識できませんでした",
                     "もう一度ゆっくり話すか、入力マイクを確認してください。")
+
+
+def _open_settings(cfg, pipeline, tray, restart_hotkey) -> None:  # noqa: ANN001
+    """設定ダイアログを開き、保存時に可能な項目を即時反映する。"""
+    from .ui.settings_dialog import SettingsDialog
+
+    prev_backend = cfg.stt.backend
+    sd = pipeline.tts.player._sd  # デバイス一覧用(None可)
+
+    def apply(c) -> None:  # noqa: ANN001
+        pipeline.set_mode(c.stt.mode)          # トリガー方式を即反映
+        tray.set_mode_ui(c.stt.mode)
+        tray.act_monitor.setChecked(bool(c.audio.monitor_enabled))
+        restart_hotkey()                        # 新しいキーで付け替え
+        if c.stt.backend != prev_backend:
+            tray.notify("設定", "STTバックエンドの変更は再起動後に有効です。")
+        else:
+            tray.notify("設定", "設定を保存しました(即時反映)。")
+
+    dlg = SettingsDialog(cfg, sd, apply)
+    dlg.exec()
 
 
 def _test_speak(tts, tray) -> None:  # noqa: ANN001

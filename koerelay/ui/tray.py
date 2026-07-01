@@ -46,6 +46,7 @@ class TrayApp(QObject):
         self.on_mode: Callable[[str], None] | None = None       # 'ptt' / 'vad' 切替
         self.on_monitor: Callable[[bool], None] | None = None   # モニタ出力 ON/OFF
         self.on_test: Callable[[], None] | None = None          # テスト発話
+        self.on_settings: Callable[[], None] | None = None      # 設定画面を開く
         self._pending = set()   # 準備待ちのコンポーネント("音声"等)
         self._ready = False     # 全コンポーネント準備完了 = 利用可能
         self._enabled = True
@@ -121,6 +122,10 @@ class TrayApp(QObject):
         self.act_test = QAction("テスト発話(動作確認)", self._menu)
         self.act_test.triggered.connect(lambda: self.on_test and self.on_test())
         self._menu.addAction(self.act_test)
+
+        self.act_settings = QAction("設定…", self._menu)
+        self.act_settings.triggered.connect(lambda: self.on_settings and self.on_settings())
+        self._menu.addAction(self.act_settings)
 
         self.act_check = QAction("アップデートを確認…", self._menu)
         self.act_check.triggered.connect(lambda: self.check_updates(manual=True))
