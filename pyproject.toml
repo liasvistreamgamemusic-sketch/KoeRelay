@@ -12,11 +12,13 @@ dependencies = [
 
 # 機能別の追加依存。graceful degradation で未導入でも起動はする。
 [project.optional-dependencies]
-stt = ["faster-whisper", "numpy", "sounddevice", "webrtcvad"]  # 音声入力 + 文字起こし + VAD
+# webrtcvad-wheels は import 名 'webrtcvad' のままプレビルトwheelを提供(Windows/py3.12でも
+# Cコンパイル不要 → CIビルドが安定)。VADは無くてもRMSにフォールバックするので任意。
+stt = ["faster-whisper", "numpy", "sounddevice", "webrtcvad-wheels"]  # 音声入力 + 文字起こし + VAD
 tts = ["requests", "sounddevice", "soundfile"]     # Irodori-TTS 接続 + 再生
 full = [
     "faster-whisper", "numpy", "sounddevice", "soundfile",
-    "requests", "pyyaml", "pynput", "webrtcvad",
+    "requests", "pyyaml", "pynput", "webrtcvad-wheels",
 ]
 
 [project.scripts]
