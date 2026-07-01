@@ -20,11 +20,13 @@ if cfg_example.exists():
     datas.append((str(cfg_example), "."))
 
 binaries = []
-hiddenimports = collect_submodules("koerelay")
+# webrtcvad は遅延 import(関数内)なので静的解析で拾われない → 明示的に含める。
+# 収集は下のループから除外し、メタデータ名差異はローカルフック(packaging/hooks)で吸収する。
+hiddenimports = collect_submodules("koerelay") + ["webrtcvad"]
 
 # ネイティブ依存はまるごと収集(datas+binaries+hiddenimports)。
 for mod in ("faster_whisper", "ctranslate2", "onnxruntime", "av",
-            "tokenizers", "sounddevice", "soundfile", "pynput", "webrtcvad"):
+            "tokenizers", "sounddevice", "soundfile", "pynput"):
     try:
         d, b, h = collect_all(mod)
         datas += d
@@ -39,6 +41,7 @@ a = Analysis(
     binaries=binaries,
     datas=datas,
     hiddenimports=hiddenimports,
+    hookspath=[str(root / "packaging" / "hooks")],  # 同梱フックを上書き(webrtcvad対策)
     noarchive=False,
 )
 pyz = PYZ(a.pure)
