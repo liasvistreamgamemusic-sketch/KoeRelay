@@ -95,7 +95,7 @@ def main() -> int:
     def start_services() -> None:
         """モデル/サーバの読み込みは「更新しないと決まってから」実行する。"""
         from .pipeline import RelayPipeline
-        from .stt.recognizer import Recognizer
+        from .stt import build_recognizer
         from .tts.manager import TTSManager
 
         tray.prepare("音声")
@@ -113,7 +113,18 @@ def main() -> int:
 
         # Whisper モデルのロード(重い)は別スレッドで。完了後に STT を ready に。
         def load_stt() -> None:
-            recognizer = Recognizer(cfg.stt)
+            # remote バックエンドなら STT サーバを自動起動(任意)してから接続。
+            if cfg.stt.backend == "remote" and cfg.stt.autostart_server and cfg.stt.server_cmd:
+                from .services import ManagedProcess
+                stt_proc = ManagedProcess(
+                    cfg.stt.server_cmd,
+                    ready_url=cfg.stt.remote_url.rstrip("/").rsplit("/v1", 1)[0] + "/health",
+                    name="STTServer", stop_cmd=list(cfg.stt.stop_cmd),
+                )
+                holder["stt_proc"] = stt_proc
+                stt_proc.start()
+
+            recognizer = build_recognizer(cfg.stt)
             recognizer.warmup()  # 初回の文字起こし遅延を起動時に先取り
             pipeline = RelayPipeline(cfg, recognizer, tts)
             pipeline.on_state = tray.set_state
@@ -169,6 +180,10 @@ def main() -> int:
         tts = holder.get("tts")
         if tts:
             tts.stop()
+        # STTサーバ(自動起動していれば停止)。
+        stt_proc = holder.get("stt_proc")
+        if stt_proc:
+            stt_proc.stop()
 
     app.aboutToQuit.connect(shutdown)
     return app.exec()

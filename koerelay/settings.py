@@ -21,7 +21,14 @@ CONFIG_JSON_FALLBACK = DATA_DIR / "config.json"
 class STTConfig:
     """音声→テキスト(faster-whisper)。PLAN.md §4.1 / §4.4。"""
     enabled: bool = True
-    backend: str = "faster-whisper"
+    # faster-whisper: ローカル(CPU/NVIDIA)。remote: WSL等のSTTサーバ(GPU/ROCm可)にHTTP送信。
+    backend: str = "faster-whisper"    # faster-whisper | remote
+    # remote バックエンド時のSTTサーバ(OpenAI互換 /v1/audio/transcriptions)。
+    remote_url: str = "http://127.0.0.1:8099/v1"
+    # STTサーバの自動起動(remote時、任意)。WSL上のサーバを起動する例は config.yaml.example 参照。
+    autostart_server: bool = False
+    server_cmd: list[str] = field(default_factory=list)
+    stop_cmd: list[str] = field(default_factory=list)
     model: str = "small"
     # LLMが無い構成なので STT も GPU 可(PLAN §4.4のCPU固定は撤回)。
     # auto = GPU優先で初期化し、失敗したら自動でCPUへ。

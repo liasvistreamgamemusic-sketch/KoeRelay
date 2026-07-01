@@ -3,9 +3,19 @@
 
 stt:
   enabled: true
+  # backend: faster-whisper(ローカルCPU/NVIDIA) | remote(WSL等のSTTサーバ, AMD GPU可)
+  # AMD(ROCm)GPUで文字起こししたい場合は remote(stt_server/)を使う。faster-whisperは
+  # CTranslate2依存でROCm非対応のため、その構成ではCPUになる。
+  backend: remote
+  remote_url: http://127.0.0.1:8099/v1   # remote時: STTサーバ(OpenAI互換)
+  # STTサーバの自動起動(remote時)。WSL(Ubuntu-24.04)で起動する例。
+  # 既存の Irodori-TTS-Server の .venv(torch-rocm/transformers入り)を再利用する:
+  autostart_server: true
+  server_cmd: ["wsl","-d","Ubuntu-24.04","--","bash","-lc","cd ~/github/KoeRelay/stt_server && KOERELAY_STT_VENV=~/github/KoeRelay/Irodori-TTS-Server/.venv ./start.sh"]
+  # stop_cmd: 未指定ならwsl起動時は自動で pkill -f 'uvicorn server:app'
+  # --- 以下は backend: faster-whisper(ローカル)時の設定 ---
   model: small            # tiny/base/small/medium/large-v3。大きいほど高精度・低速
   device: auto            # auto(GPU優先→失敗時CPU) | cuda | cpu
-  # 注意: faster-whisper(CTranslate2)のGPUは NVIDIA CUDA のみ。AMD(ROCm)GPUは非対応でCPUになる
   compute_type: float16   # cuda:float16 / cpu は自動で int8 に補正
   language: ja
   samplerate: 16000

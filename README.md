@@ -49,6 +49,30 @@
   WSL上のサーバを起動する例は `config.yaml.example` を参照。
 - 手動起動でも構いません。接続できない場合はトレイで警告します。
 
+## STT を AMD GPU で動かす(任意, remote バックエンド)
+
+既定の faster-whisper は CTranslate2 依存で **AMD(ROCm)GPU 非対応**(NVIDIA CUDA か CPU)。
+AMD GPU で文字起こししたい場合は、WSL 上に STT サーバ([stt_server/](stt_server/))を立て、
+`config.yaml` で `stt.backend: remote` にします。サーバは transformers の Whisper を
+PyTorch(ROCm)で動かし、OpenAI 互換の `POST /v1/audio/transcriptions` を提供します。
+
+- 既存の Irodori-TTS-Server の `.venv`(torch-rocm/transformers 入り)を再利用できます:
+  `KOERELAY_STT_VENV=~/github/KoeRelay/Irodori-TTS-Server/.venv ./stt_server/start.sh`
+- KoeRelay 側で `stt.autostart_server: true` にすると、起動時に自動でこのサーバを立て、
+  終了時に停止します(設定例は `config.yaml.example`)。
+- 実測(RX 9070 XT / whisper-small): 5.2秒の音声を **0.9秒**で文字起こし。サーバは起動時に
+  モデルを preload するので初回から待ちなし。
+
+## 起動〜終了の自動化(まとめ)
+
+`config.yaml`(例を同梱)で TTS/STT ともに `autostart_server: true` にすると:
+
+1. **起動時**: KoeRelay が TTS サーバ・STT サーバ(WSL)を自動起動。
+2. **準備**: 両サーバがモデルを preload + KoeRelay が TTS ウォームアップ。準備完了で
+   トレイが「利用可能」を通知(=1回目から待ちが出にくい)。
+3. **終了時**: KoeRelay が自動起動したサーバを停止(pkill)。
+   ※既に自分で起動していた常駐サーバは停止しません(勝手に殺さない設計)。
+
 ## 動作確認・トラブルシュート
 
 - **テスト発話**: トレイメニュー「テスト発話(動作確認)」で固定文を合成・再生します。
