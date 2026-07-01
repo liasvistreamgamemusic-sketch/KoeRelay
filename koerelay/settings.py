@@ -23,8 +23,11 @@ class STTConfig:
     enabled: bool = True
     backend: str = "faster-whisper"
     model: str = "small"
-    device: str = "cpu"            # cpu(推奨) | cuda | auto。§4.4: TTSとのGPU競合回避でCPU固定
-    compute_type: str = "int8"     # cpu なら int8、cuda なら float16 が目安
+    # LLMが無い構成なので STT も GPU 可(PLAN §4.4のCPU固定は撤回)。
+    # auto = GPU優先で初期化し、失敗したら自動でCPUへ。
+    # 注意: faster-whisper(CTranslate2)のGPUは NVIDIA CUDA のみ。AMD(ROCm)は不可でCPUになる。
+    device: str = "auto"           # auto | cuda | cpu
+    compute_type: str = "float16"  # cuda: float16 / cpu: 自動で int8 に補正
     language: str = "ja"
     samplerate: int = 16000
     min_record_sec: float = 0.3    # これ未満の押下/発話は誤爆として無視

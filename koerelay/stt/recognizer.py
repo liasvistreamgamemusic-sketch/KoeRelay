@@ -24,17 +24,34 @@ class Recognizer:
             return
         try:
             from faster_whisper import WhisperModel
-
-            device = cfg.device
-            compute = cfg.compute_type
-            if device == "auto":
-                device, compute = "cpu", "int8"
-            self._on_gpu = device in ("cuda",)
-            self._model = WhisperModel(cfg.model, device=device, compute_type=compute)
-            log.info("faster-whisper ready (model=%s, device=%s, compute=%s)",
-                     cfg.model, device, compute)
         except Exception as e:
-            log.warning("faster-whisper 初期化失敗(%s)→ STT無効", e)
+            log.warning("faster-whisper 未導入(%s)→ STT無効", e)
+            return
+
+        device = (cfg.device or "auto").lower()
+        compute = cfg.compute_type
+        if device == "auto":
+            device, compute = "cuda", "float16"  # まず GPU を試す
+
+        # GPU優先で初期化。失敗したら CPU/int8 へ自動フォールバック(STTを止めない)。
+        # 注意: faster-whisper(CTranslate2)の GPU は NVIDIA CUDA のみ対応。
+        # AMD(ROCm)GPU では初期化に失敗し CPU にフォールバックする。
+        attempts = [(device, compute)]
+        if device != "cpu":
+            attempts.append(("cpu", "int8"))
+        for dev, comp in attempts:
+            if dev == "cpu" and comp in ("float16", "float32"):
+                comp = "int8"  # CPU で float16 は不可
+            try:
+                self._model = WhisperModel(cfg.model, device=dev, compute_type=comp)
+                self._on_gpu = dev == "cuda"
+                log.info("faster-whisper ready (model=%s, device=%s, compute=%s)",
+                         cfg.model, dev, comp)
+                break
+            except Exception as e:
+                log.warning("STT初期化失敗 (device=%s, compute=%s): %s", dev, comp, e)
+        if self._model is None:
+            log.warning("STT を初期化できませんでした → STT無効")
 
     def available(self) -> bool:
         return self._model is not None

@@ -4,8 +4,9 @@
 stt:
   enabled: true
   model: small            # tiny/base/small/medium/large-v3。大きいほど高精度・低速
-  device: cpu             # cpu(推奨) | cuda | auto。§4.4: TTS(ROCm)とのGPU競合回避
-  compute_type: int8      # cpu:int8 / cuda:float16
+  device: auto            # auto(GPU優先→失敗時CPU) | cuda | cpu
+  # 注意: faster-whisper(CTranslate2)のGPUは NVIDIA CUDA のみ。AMD(ROCm)GPUは非対応でCPUになる
+  compute_type: float16   # cuda:float16 / cpu は自動で int8 に補正
   language: ja
   samplerate: 16000
   min_record_sec: 0.3     # これ未満の短い押下/発話は誤爆として無視
