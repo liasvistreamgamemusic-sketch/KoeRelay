@@ -33,6 +33,10 @@ tts:
   voice: sumire           # 参照音声(TTSサーバ側に登録した voice 名)
   speed: 1.0
   response_format: wav
+  stream: true               # 低遅延: 合成できたチャンクから即再生(発話開始を早める)
+  chunk_min_chars: 24        # 通常チャンクの最小文字数(小さいほど早く区切る)
+  first_chunk_min_chars: 1   # 先頭は最初の文で即区切る=最初の音を最速に
+  # num_steps: 16            # 拡散ステップ数。小=速い/やや品質低下。未指定=サーバ既定
   # サーバ自動起動(任意)。true にすると KoeRelay 起動時に下の server_cmd で
   # TTSサーバを立ち上げ、終了時に自動停止します(自分で起動したときのみ pkill)。
   # 既に起動済みのサーバがあればそれを使い、二重起動も勝手な停止もしません。

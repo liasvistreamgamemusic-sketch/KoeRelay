@@ -70,6 +70,18 @@ class SettingsDialog(QDialog):
         self.spin_speed.setValue(float(cfg.tts.speed))
         form.addRow("話速", self.spin_speed)
 
+        # --- 低遅延(TTS) ---
+        self.chk_stream = QCheckBox("チャンクを合成でき次第すぐ再生(発話開始を早める)")
+        self.chk_stream.setChecked(bool(cfg.tts.stream))
+        form.addRow("低遅延ストリーミング", self.chk_stream)
+
+        from PySide6.QtWidgets import QSpinBox
+        self.spin_steps = QSpinBox()
+        self.spin_steps.setRange(0, 60)
+        self.spin_steps.setSpecialValueText("既定(24)")   # 0 = 未指定
+        self.spin_steps.setValue(int(cfg.tts.num_steps) if cfg.tts.num_steps else 0)
+        form.addRow("TTSステップ数(小=速い)", self.spin_steps)
+
         # --- 入力方式(STT) ---
         self.cmb_mode = QComboBox()
         self.cmb_mode.addItems(["ptt", "vad"])
@@ -130,6 +142,8 @@ class SettingsDialog(QDialog):
         c.audio.volume = float(self.spin_vol.value())
         c.tts.voice = self.edit_voice.text().strip() or c.tts.voice
         c.tts.speed = float(self.spin_speed.value())
+        c.tts.stream = self.chk_stream.isChecked()
+        c.tts.num_steps = self.spin_steps.value() or None  # 0 → 既定(None)
         c.stt.mode = self.cmb_mode.currentText()
         c.hotkey.key = self.edit_hotkey.text().strip() or c.hotkey.key
         c.stt.backend = self.cmb_backend.currentText()

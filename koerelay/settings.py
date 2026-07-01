@@ -58,6 +58,11 @@ class TTSConfig:
     cfg_scale_text: float | None = None
     cfg_scale_speaker: float | None = None
     request_timeout: float = 60.0
+    # 低遅延: SSEストリーミングで「合成できたチャンクから即再生」する(発話開始を早める)。
+    stream: bool = True
+    chunk_min_chars: int = 24            # 通常チャンクの最小文字数(小さいほど早く区切る=低遅延)
+    first_chunk_min_chars: int = 1       # 先頭は最初の文でも即区切る=最初の一声を最速で出す
+    num_steps: int | None = None         # 拡散ステップ数(小さいほど高速・やや品質低下。未指定=サーバ既定24)
     # サーバ自動起動(任意)。WSL上のサーバを起動する例:
     #   ["wsl","-d","<distro>","--","bash","-lc","cd ~/github/KoeRelay/Irodori-TTS-Server && ./start.sh"]
     autostart_server: bool = False

@@ -5,4 +5,4 @@
 push-to-talk 方式(PLAN.md 参照)。LLM・会話は介さない素通しリレー。
 """
 
-__version__ = "0.1.3"
+__version__ = "0.1.4"

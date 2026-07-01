@@ -73,12 +73,27 @@ class TTSManager:
             text = self._q.get()
             if text is None:
                 break
+            started = False
             try:
-                audio = self.backend.synth(text, speed=self.cfg.speed)
-                if audio:
-                    if self.on_start:
-                        self.on_start()
-                    self.player.play(audio)
+                if self.cfg.stream:
+                    # 合成できたチャンクから順に再生(先頭チャンクで喋り始める=低遅延)。
+                    for chunk in self.backend.synth_stream(text, speed=self.cfg.speed):
+                        if not self._running:
+                            break
+                        if not chunk:
+                            continue
+                        if not started and self.on_start:
+                            self.on_start()
+                        started = True
+                        self.player.play(chunk)
+                if not started:
+                    # ストリーミング無効/失敗時は全文合成にフォールバック。
+                    audio = self.backend.synth(text, speed=self.cfg.speed)
+                    if audio:
+                        if self.on_start:
+                            self.on_start()
+                        started = True
+                        self.player.play(audio)
             except Exception as e:
                 log.warning("TTS再生エラー: %s", e)
             finally:
