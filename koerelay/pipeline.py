@@ -37,32 +37,72 @@ class RelayPipeline:
         self.cfg = cfg
         self.rec = recognizer
         self.tts = tts
-        self.mic = MicRecorder(cfg.stt, cfg.audio, on_audio=self._on_audio)
+        self.mic = MicRecorder(cfg.stt, cfg.audio, on_audio=self._on_audio,
+                               gate=self._vad_gate)
         self.on_state: OnState | None = None
         self.on_text: OnText | None = None
         self.enabled = True  # ON/OFF トグル(トレイから切替)
+        self.mode = cfg.stt.mode if cfg.stt.mode in ("ptt", "vad") else "ptt"
+        self._speaking = False
+        self._stt_lock = threading.Lock()  # 文字起こしの同時実行を防ぐ(VAD連続区間対策)
         # TTS の再生開始/終了で状態表示を切り替える
-        self.tts.on_start = lambda: self._set_state(State.SPEAKING)
-        self.tts.on_end = lambda: self._set_state(State.IDLE)
+        self.tts.on_start = self._on_speak_start
+        self.tts.on_end = self._on_speak_end
 
     def available(self) -> bool:
         return self.mic.available() and self.rec.available()
 
-    # ---- ホットキー長押しハンドラ ------------------------------------
+    # ---- モード切替(PTT / 常時VAD)----------------------------------
+    def start(self) -> None:
+        """現在のモードでリスニングを開始する。"""
+        self.set_mode(self.mode)
+
+    def set_mode(self, mode: str) -> None:
+        """'ptt' か 'vad' に切替。VAD なら常時リスニングを開始/PTTなら停止。"""
+        if mode not in ("ptt", "vad"):
+            return
+        self.mode = mode
+        if mode == "vad":
+            if self.enabled and self.available():
+                self.mic.start_vad()
+        else:
+            self.mic.stop_vad()
+        self._set_state(State.IDLE)
+
+    def set_enabled(self, on: bool) -> None:
+        """ON/OFF。VADモードなら常時リスニングの起動/停止も伴う。"""
+        self.enabled = on
+        if self.mode == "vad":
+            if on and self.available():
+                self.mic.start_vad()
+            else:
+                self.mic.stop_vad()
+
+    def _vad_gate(self) -> bool:
+        """VAD が音声を取り込んで良いか(発話中=TTS再生中は取り込まない)。"""
+        return self.enabled and not self._speaking
+
+    def _on_speak_start(self) -> None:
+        self._speaking = True
+        self._set_state(State.SPEAKING)
+
+    def _on_speak_end(self) -> None:
+        self._speaking = False
+        self._set_state(State.IDLE)
+
+    # ---- ホットキー長押しハンドラ(PTTモード)------------------------
     def begin_recording(self) -> None:
-        if not self.enabled or not self.available():
+        if self.mode != "ptt" or not self.enabled or not self.available():
             return
         self.mic.start_recording()
         if self.mic.is_recording():
             self._set_state(State.RECORDING)
 
     def end_recording(self) -> None:
-        # stop_recording() は録音があれば _on_audio を呼ぶ。無ければ IDLE に戻す。
-        was = self.mic.is_recording()
+        if self.mode != "ptt":
+            return
+        # stop_recording() は録音があれば _on_audio を呼ぶ(TRANSCRIBING へ)。
         self.mic.stop_recording()
-        if was and not self.mic.is_recording():
-            # _on_audio が呼ばれていれば TRANSCRIBING に入る。短すぎた等なら IDLE へ。
-            pass
 
     # ---- STT → TTS ----------------------------------------------------
     def _on_audio(self, audio: np.ndarray, samplerate: int) -> None:
@@ -73,7 +113,9 @@ class RelayPipeline:
 
     def _process(self, audio: np.ndarray, samplerate: int) -> None:
         try:
-            text = self.rec.transcribe(audio, samplerate)
+            # VADモードでは区間が連続で届きうる。モデルへの同時呼び出しを避けて直列化。
+            with self._stt_lock:
+                text = self.rec.transcribe(audio, samplerate)
             log.info("文字起こし: %r", text)
             if self.on_text:
                 self.on_text(text)

@@ -27,7 +27,12 @@ class STTConfig:
     compute_type: str = "int8"     # cpu なら int8、cuda なら float16 が目安
     language: str = "ja"
     samplerate: int = 16000
-    min_record_sec: float = 0.3    # これ未満の押下は誤爆として無視
+    min_record_sec: float = 0.3    # これ未満の押下/発話は誤爆として無視
+    # トリガー方式: ptt(ホットキー長押し) | vad(常時リスニング、無音で自動区切り)
+    mode: str = "ptt"
+    vad_aggressiveness: int = 2    # webrtcvad の攻めどころ 0-3(大きいほど発話判定が厳しい)
+    vad_silence_ms: int = 600      # この長さの無音で発話区間を確定(短いほど低遅延)
+    vad_ignore_while_speaking: bool = True  # 発話中(TTS再生中)は取り込まない(エコー防止)
 
 
 @dataclass

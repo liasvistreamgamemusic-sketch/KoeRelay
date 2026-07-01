@@ -43,6 +43,7 @@ class TrayApp(QObject):
         self.cfg = cfg
         self.on_stay_running: Callable[[], None] | None = None  # 通常起動でサービス開始
         self.on_toggle: Callable[[bool], None] | None = None    # ON/OFF 切替
+        self.on_mode: Callable[[str], None] | None = None       # 'ptt' / 'vad' 切替
         self._pending = set()   # 準備待ちのコンポーネント("音声"等)
         self._ready = False     # 全コンポーネント準備完了 = 利用可能
         self._enabled = True
@@ -89,6 +90,20 @@ class TrayApp(QObject):
         self._menu.addAction(self.act_hotkey)
         self._menu.addSeparator()
 
+        # モード切替(PTT / 常時VAD)。排他選択。
+        from PySide6.QtGui import QActionGroup
+        mode_menu = self._menu.addMenu("モード")
+        self._mode_group = QActionGroup(self._menu)
+        self._mode_group.setExclusive(True)
+        self.act_mode_ptt = QAction("長押し(PTT)", self._menu, checkable=True)
+        self.act_mode_vad = QAction("常時(VAD)", self._menu, checkable=True)
+        self.act_mode_ptt.triggered.connect(lambda: self._select_mode("ptt"))
+        self.act_mode_vad.triggered.connect(lambda: self._select_mode("vad"))
+        for a in (self.act_mode_ptt, self.act_mode_vad):
+            self._mode_group.addAction(a)
+            mode_menu.addAction(a)
+        self.act_mode_ptt.setChecked(True)
+
         self.act_toggle = QAction("有効", self._menu, checkable=True)
         self.act_toggle.setChecked(True)
         self.act_toggle.triggered.connect(self._toggle)
@@ -109,6 +124,18 @@ class TrayApp(QObject):
             self.on_toggle(checked)
         self._refresh_icon()
 
+    def _select_mode(self, mode: str) -> None:
+        if self.on_mode:
+            self.on_mode(mode)
+        label = "長押し(PTT)" if mode == "ptt" else "常時(VAD)"
+        self.tray.showMessage("モード変更", f"{label} に切り替えました",
+                              QSystemTrayIcon.Information, 2500)
+
+    def set_mode_ui(self, mode: str) -> None:
+        """外部(pipeline)の現在モードにメニューのチェックを合わせる。"""
+        self.act_mode_ptt.setChecked(mode == "ptt")
+        self.act_mode_vad.setChecked(mode == "vad")
+
     # ---- 準備状況(いつ話せるか) ------------------------------------
     def prepare(self, component: str) -> None:
         """component の準備開始を登録(準備完了まで「準備中」表示)。"""
@@ -124,11 +151,12 @@ class TrayApp(QObject):
             self._ready = True
             self._state = State.IDLE
             self._refresh_icon()
-            self.tray.showMessage(
-                "KoeRelay 利用可能",
-                f"{self.cfg.hotkey.key} を長押しして話すと、別の声で仮想マイクに流します。",
-                QSystemTrayIcon.Information, 5000,
-            )
+            if self.act_mode_vad.isChecked():
+                hint = "常時リスニング中。話すと別の声で仮想マイクに流します。"
+            else:
+                hint = f"{self.cfg.hotkey.key} を長押しして話すと、別の声で仮想マイクに流します。"
+            self.tray.showMessage("KoeRelay 利用可能", hint,
+                                  QSystemTrayIcon.Information, 5000)
             log.info("KoeRelay 利用可能")
 
     # ---- 状態表示 ----------------------------------------------------

@@ -112,9 +112,11 @@ def main() -> int:
             pipeline.enabled = tray._enabled
             holder["pipeline"] = pipeline
 
-            tray.on_toggle = lambda on: setattr(pipeline, "enabled", on)
+            tray.on_toggle = pipeline.set_enabled
+            tray.on_mode = pipeline.set_mode
+            tray.set_mode_ui(pipeline.mode)
 
-            # ホットキー長押しで録音 → 離すと STT→TTS
+            # ホットキー(PTT用)。VADモードでも常駐させ、実行時のモード切替に備える。
             if cfg.hotkey.enabled:
                 from .hotkey import HotkeyListener
                 hk = HotkeyListener(
@@ -127,6 +129,7 @@ def main() -> int:
                 else:
                     log.warning("ホットキーを開始できませんでした(pynput未導入?)")
 
+            pipeline.start()  # 設定モード(既定PTT / vadなら常時リスニング)で開始
             _warn_if_no_cable(pipeline, tray)
             _log_status(cfg, recognizer, pipeline)
             tray.mark_ready("STT")

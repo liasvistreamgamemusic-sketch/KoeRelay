@@ -12,11 +12,11 @@ dependencies = [
 
 # 機能別の追加依存。graceful degradation で未導入でも起動はする。
 [project.optional-dependencies]
-stt = ["faster-whisper", "numpy", "sounddevice"]   # 音声入力 + 文字起こし
+stt = ["faster-whisper", "numpy", "sounddevice", "webrtcvad"]  # 音声入力 + 文字起こし + VAD
 tts = ["requests", "sounddevice", "soundfile"]     # Irodori-TTS 接続 + 再生
 full = [
     "faster-whisper", "numpy", "sounddevice", "soundfile",
-    "requests", "pyyaml", "pynput",
+    "requests", "pyyaml", "pynput", "webrtcvad",
 ]
 
 [project.scripts]

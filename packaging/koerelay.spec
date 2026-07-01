@@ -24,7 +24,7 @@ hiddenimports = collect_submodules("koerelay")
 
 # ネイティブ依存はまるごと収集(datas+binaries+hiddenimports)。
 for mod in ("faster_whisper", "ctranslate2", "onnxruntime", "av",
-            "tokenizers", "sounddevice", "soundfile", "pynput"):
+            "tokenizers", "sounddevice", "soundfile", "pynput", "webrtcvad"):
     try:
         d, b, h = collect_all(mod)
         datas += d
