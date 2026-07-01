@@ -44,6 +44,14 @@ class AudioPlayer:
             return None
         return resolve_output_device(self._sd, self.cfg.output_device)
 
+    def _default_output_index(self):
+        """OS 既定の出力デバイス index。取得できなければ None。"""
+        try:
+            dev = self._sd.default.device
+            return dev[1] if dev else None
+        except Exception:
+            return None
+
     def play(self, audio: bytes) -> None:
         """音声バイト列を仮想マイク(+任意でモニタ)へ再生。完了までブロック。"""
         if not audio or not self.available():
@@ -62,8 +70,14 @@ class AudioPlayer:
         out_idx = resolve_output_device(self._sd, self.cfg.output_device)
         targets = [("出力", out_idx)]
         if self.cfg.monitor_enabled:
-            mon_idx = resolve_output_device(self._sd, self.cfg.monitor_device) \
-                if self.cfg.monitor_device else None
+            if self.cfg.monitor_device:
+                mon_idx = resolve_output_device(self._sd, self.cfg.monitor_device)
+            else:
+                mon_idx = self._default_output_index()
+                # 既定出力が CABLE(=出力先と同じ)だとスピーカーから鳴らない典型ケース。
+                if mon_idx is not None and mon_idx == out_idx:
+                    log.warning("モニタ先がOS既定=CABLEと同じです。スピーカーから鳴りません。"
+                                "config の audio.monitor_device に実スピーカー名を指定してください")
             targets.append(("モニタ", mon_idx))
 
         dur = len(data) / sr if sr else 0.0

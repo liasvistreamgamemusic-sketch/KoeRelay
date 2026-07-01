@@ -236,6 +236,30 @@ def _log_status(cfg: AppConfig, recognizer, pipeline) -> None:  # noqa: ANN001
     log.info("出力(仮想マイク): device=%s (設定名=%r)",
              out if out is not None else "OS既定", cfg.audio.output_device)
     log.info("TTS: %s", "有効" if cfg.tts.enabled else "無効")
+    _log_output_devices(pipeline)
+
+
+def _log_output_devices(pipeline) -> None:  # noqa: ANN001
+    """出力デバイス一覧をログへ。monitor_device 設定名の手掛かりにする。"""
+    sd = pipeline.tts.player._sd
+    if sd is None:
+        return
+    try:
+        default_out = sd.default.device[1] if sd.default.device else None
+    except Exception:
+        default_out = None
+    from .stt.device import list_devices
+    _, outputs = list_devices(sd)
+    log.info("=== 出力デバイス一覧(monitor_device にこの名前の一部を指定)===")
+    for idx, name in outputs:
+        marks = []
+        if idx == default_out:
+            marks.append("既定")
+        if "cable" in name.lower():
+            marks.append("CABLE=仮想マイク")
+        suffix = f"  [{'/'.join(marks)}]" if marks else ""
+        log.info("  [%s] %s%s", idx, name, suffix)
+    log.info("=== ここまで ===")
 
 
 if __name__ == "__main__":
