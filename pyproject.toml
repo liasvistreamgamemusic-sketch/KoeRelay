@@ -1,0 +1,30 @@
+[project]
+name = "koerelay"
+version = "0.1.0"
+description = "リアルタイム声変換リレー(マイク→STT→TTS→仮想マイク)"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "PySide6>=6.6",         # 常駐トレイUI
+    "PyYAML>=6.0",          # config.yaml
+    "pynput>=1.7",          # グローバルショートカット長押し(push-to-talk)
+]
+
+# 機能別の追加依存。graceful degradation で未導入でも起動はする。
+[project.optional-dependencies]
+stt = ["faster-whisper", "numpy", "sounddevice"]   # 音声入力 + 文字起こし
+tts = ["requests", "sounddevice", "soundfile"]     # Irodori-TTS 接続 + 再生
+full = [
+    "faster-whisper", "numpy", "sounddevice", "soundfile",
+    "requests", "pyyaml", "pynput",
+]
+
+[project.scripts]
+koerelay = "koerelay.main:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["koerelay"]

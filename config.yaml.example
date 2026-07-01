@@ -1,0 +1,40 @@
+# KoeRelay 設定サンプル。config.yaml にコピーして編集してください。
+# すべて任意。書かなかった項目は既定値が使われます。
+
+stt:
+  enabled: true
+  model: small            # tiny/base/small/medium/large-v3。大きいほど高精度・低速
+  device: cpu             # cpu(推奨) | cuda | auto。§4.4: TTS(ROCm)とのGPU競合回避
+  compute_type: int8      # cpu:int8 / cuda:float16
+  language: ja
+  samplerate: 16000
+  min_record_sec: 0.3     # これ未満の短い押下は誤爆として無視
+
+tts:
+  enabled: true
+  base_url: http://127.0.0.1:8088/v1   # Irodori-TTS-Server
+  api_key: irodori
+  model: irodori-tts
+  voice: sumire           # 参照音声(TTSサーバ側に登録した voice 名)
+  speed: 1.0
+  response_format: wav
+  # サーバ自動起動(任意)。WSL上のサーバを起動する例:
+  autostart_server: false
+  # server_cmd: ["wsl","-d","Ubuntu","--","bash","-lc","cd ~/github/KoeRelay/Irodori-TTS-Server && ./start.sh"]
+  warmup: true            # 起動時にダミー合成して初回発話を速くする
+
+audio:
+  output_device: "CABLE"  # 仮想マイク側の出力(部分一致)。VB-CABLE の "CABLE Input"
+  monitor_enabled: false  # 実スピーカーへも同時再生してモニタするか
+  monitor_device: ""      # 空なら OS 既定の出力
+  input_device: ""        # 録音マイク(部分一致)。空なら既定マイク
+  volume: 1.0
+
+hotkey:
+  enabled: true
+  key: "<f8>"             # 長押しで録音。組み合わせ例: "<ctrl>+<alt>+k"
+
+update:
+  auto_check: true        # 起動時に GitHub Releases を確認
+  auto_install: true      # true: モデル/サーバ読込前に自動DL+適用+再起動(.exe時)
+  repo: liasvistreamgamemusic-sketch/KoeRelay

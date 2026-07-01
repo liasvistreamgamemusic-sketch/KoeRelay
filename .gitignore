@@ -1,0 +1,38 @@
+# --- Python ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+
+# --- 仮想環境 / ビルド ---
+.venv/
+venv/
+env/
+build/
+dist/
+*.spec.bak
+
+# --- uv ---
+.uv/
+# uv.lock は再現性のためコミットする(無視しない)
+
+# --- アプリのローカル状態(ログ・JSON設定フォールバック) ---
+# ※実体は %LOCALAPPDATA%/KoeRelay(Win)・~/.local/share/koerelay(Linux)。
+/data/
+
+# --- ユーザー設定(デバイス名等のローカル設定) ---
+/config.yaml
+
+# --- 診断出力・サンプル音声(大きいので配布に含めない) ---
+/samples/*.wav
+
+# --- 隔離した TTS サーバの複製(別リポジトリ管理・巨大な .venv を含む) ---
+/Irodori-TTS-Server/
+
+# --- エディタ / OS ---
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
