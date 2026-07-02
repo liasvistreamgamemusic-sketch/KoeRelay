@@ -69,6 +69,10 @@ class RelayPipeline:
         if mode not in ("ptt", "vad"):
             return
         self.mode = mode
+        # 実行時モードを設定にも反映しておく。これをしないと、トレイでモードを
+        # 切り替えても cfg.stt.mode が古いまま残り、設定画面を開いて(モード以外を)
+        # 保存した瞬間に古いモード(例: vad)へ勝手に戻ってしまう。
+        self.cfg.stt.mode = mode
         if mode == "vad":
             if self.enabled and self.available():
                 self.mic.start_vad()

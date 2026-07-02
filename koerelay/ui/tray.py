@@ -144,7 +144,13 @@ class TrayApp(QObject):
 
     def _select_mode(self, mode: str) -> None:
         if self.on_mode:
-            self.on_mode(mode)
+            self.on_mode(mode)  # pipeline.set_mode が cfg.stt.mode も更新する
+        # トレイで選んだモードを保存し、次回起動や設定画面でも維持されるようにする。
+        try:
+            self.cfg.stt.mode = mode
+            self.cfg.save()
+        except Exception as e:
+            log.warning("モード設定の保存に失敗: %s", e)
         label = "長押し(PTT)" if mode == "ptt" else "常時(VAD)"
         self.tray.showMessage("モード変更", f"{label} に切り替えました",
                               QSystemTrayIcon.Information, 2500)

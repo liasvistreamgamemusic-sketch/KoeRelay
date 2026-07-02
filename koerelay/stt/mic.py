@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import logging
 import threading
+import time
 from typing import Callable
 
 import numpy as np
@@ -127,6 +128,8 @@ class MicRecorder:
         silence = 0
         voiced = 0        # 実際に発話と判定されたフレーム数(幻聴対策)
         speaking = False
+        settle_until = 0.0                            # 発話明けに残響を捨てる期限(monotonic秒)
+        settle_sec = max(0.0, self.stt.vad_settle_ms / 1000.0)
         try:
             device = resolve_input_device(self._sd, self.audio.input_device)
             with self._sd.InputStream(samplerate=sr, channels=1, dtype="float32",
@@ -136,9 +139,22 @@ class MicRecorder:
                 while self._vad_running:
                     block, _ = stream.read(frame_len)
                     mono = block[:, 0]
-                    # 発話中(TTS再生中)は取り込まない(モニタ再生のエコー混入を防ぐ)
+                    # 発話中(TTS再生中)は取り込まない(モニタ再生のエコー混入を防ぐ)。
+                    # 再生が終わった後もしばらく残響を無視する予約(settle)をしておく。
                     if self.stt.vad_ignore_while_speaking and self.gate and not self.gate():
-                        buf, speaking, silence = [], False, 0
+                        buf, speaking, silence, voiced = [], False, 0, 0
+                        settle_until = time.monotonic() + settle_sec
+                        continue
+                    # 発話明けの残響期間: 取り込みを止めていた間にマイク側へ溜まった音
+                    # (自分の声のエコーや古い音)を捨て、生の発話から聞き直す。これを
+                    # しないと古い音を延々処理し続け、数秒〜十数秒「話しても反応しない」
+                    # 状態(クールダウン)になってしまう。
+                    if settle_until:
+                        settling = time.monotonic() < settle_until
+                        buf, speaking, silence, voiced = [], False, 0, 0
+                        _drain(stream)
+                        if not settling:
+                            settle_until = 0.0
                         continue
                     if _is_speech(mono, vad, sr):
                         buf.append(mono.copy())
@@ -183,6 +199,16 @@ class MicRecorder:
             except Exception:
                 pass
             self._stream = None
+
+
+def _drain(stream) -> None:  # noqa: ANN001
+    """入力ストリームに溜まった未読フレームを読み捨てる(残響・古い音の掃除)。"""
+    try:
+        stale = stream.read_available
+        if stale > 0:
+            stream.read(stale)
+    except Exception:
+        pass
 
 
 def _is_speech(mono: np.ndarray, vad, sr: int) -> bool:  # noqa: ANN001

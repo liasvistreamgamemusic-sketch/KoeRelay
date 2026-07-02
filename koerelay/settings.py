@@ -43,6 +43,11 @@ class STTConfig:
     vad_aggressiveness: int = 3    # webrtcvad の攻めどころ 0-3(大きいほど発話判定が厳しい=雑音に強い)
     vad_silence_ms: int = 600      # この長さの無音で発話区間を確定(短いほど低遅延)
     vad_ignore_while_speaking: bool = True  # 発話中(TTS再生中)は取り込まない(エコー防止)
+    # 発話(TTS再生)が終わった直後、この時間だけマイク入力を捨てて聞き直す。
+    # 再生の残響や溜まった古い音を掃除する狙い。短すぎると自分の声のエコーを拾って
+    # 再合成し続け、長い「反応しない」状態(クールダウン)を生む。長すぎると本当の
+    # 発話まで捨てるので、200〜500ms 程度が目安。
+    vad_settle_ms: int = 300
     # 幻聴(hallucination)対策: 環境音をSTTに渡さないためのゲート(VADモードのみ)。
     vad_min_speech_ms: int = 300   # 実際に発話と判定されたフレーム量がこれ未満の区間は破棄
     vad_min_rms: float = 0.02      # 区間全体の音量(RMS)がこれ未満は無音/雑音として破棄
