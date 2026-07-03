@@ -27,7 +27,8 @@ git log $BASE..HEAD --oneline                 # PR に入る全コミット (最
 git diff $BASE...HEAD --stat                  # 変更全体
 ```
 
-- 全コミットと diff から **タイトル案と本文案** (## Summary / ## Changes / ## Test plan) を作っておく
+- 全コミットと diff から **タイトル案と本文案** (## 概要 / ## 変更点 / ## 確認方法) を作っておく。
+  **タイトル・本文は必ず日本語** (type は英語キーワードのまま — `git-workflow.md` 準拠)
 - 現在ブランチが main/master のままなら、先にブランチ作成が必要な旨を報告して git-branch へ
 
 ### 2. AskUserQuestion で 1 回だけ質問
