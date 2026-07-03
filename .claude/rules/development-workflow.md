@@ -9,8 +9,11 @@
    registries (npm / PyPI / crates.io) and reference docs (Context7, GitHub
    code search) for nontrivial builds. Prefer adopting a proven implementation
    over net-new code.
-2. **Plan** — T2: written plan per FABLE F-phase. T3: **planner** agent
-   (+ **architect** for system design) and design docs before any coding.
+2. **Design & Plan** — quality bar: `design-quality.md` (design-time counterpart
+   of `code-quality.md`; pre-empts all 10 `/quality-audit` dimensions at design
+   time). T2: written plan per FABLE F-phase. T3: design docs via the
+   **design-doc** skill (multi-agent Anchor → Branch → adversarial review gates)
+   or **planner** agent (+ **architect** for system design) before any coding.
 3. **Implement with TDD** where a test harness exists (**tdd-guide** agent for
    new features and bugfixes): red → green → refactor. Target ~80% coverage on
    new code.

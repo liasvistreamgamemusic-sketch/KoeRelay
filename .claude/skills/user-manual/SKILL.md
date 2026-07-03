@@ -4,7 +4,9 @@ description: >-
   フロントエンドの全ページを Playwright で自動スクリーンショット撮影し、
   エンドユーザー向けのリッチな操作マニュアル PowerPoint (.pptx) を生成するスキル。
   ルート定義から画面一覧を機械的に列挙して撮影漏れゼロを保証し、撮影画像は 1 枚ずつ目視検証する。
-  スライドは python-pptx + デザイントークン駆動で「Office テンプレ感のない」一貫したデザインに仕上げ、
+  スライド生成は Anthropic 公式 pptx スキル (claude.ai と同系統・PptxGenJS) を優先し、
+  なければ python-pptx フォールバック。デザイン要件 (ブランド色アクセント・モチーフ反復・
+  日本語フォント明示) はエンジン非依存で契約化し、「Office テンプレ感のない」一貫したデザインに仕上げる。
   番号付きコールアウトは画像加工ではなくスライド上のシェイプとして載せる (納品後も編集可能)。
   ユーザーが「操作マニュアル作って」「ユーザーマニュアル」「利用者向け説明書」「操作手順書」
   「画面キャプチャしてマニュアル」「スクショ撮ってマニュアル」「パワポ/PPT/PowerPoint でマニュアル」
@@ -76,6 +78,9 @@ Phase 6  納品 & 完了報告
    デモアカウントを `.env.example` / seed / README から探し、見つからなければ Phase 1 で聞く。
 4. **ブランド色の抽出**: アプリの CSS variables / Tailwind config / テーマ定義から
    プライマリ色を 1 つ抽出しておく (Phase 1 の推奨ボタンに使う)。
+5. **公式 pptx スキルの有無確認**: 利用可能なスキル一覧に `pptx` (Anthropic 公式・
+   プラグイン `document-skills`) があるか確認する。Phase 4 の生成トラック選択に使う。
+   なければ Phase 1 の質問に導入可否を含める。
 
 ## Phase 1: AskUserQuestion で 1 回だけ質問 (最大 4 問)
 
@@ -90,6 +95,11 @@ Phase 6  納品 & 完了報告
 
 認証情報・動的ルートの代表 URL が Phase 0 で見つからなかった場合は、質問を 1 枠使って聞く
 (その場合は優先度の低い質問を落とす)。
+
+公式 pptx スキルが未導入の場合は質問を 1 枠使い、「公式 pptx スキルを導入して生成
+(推奨 — claude.ai の PowerPoint 生成と同系統でデザイン品質が高い。導入:
+`/plugin marketplace add anthropics/skills` → `document-skills` をインストール)」/
+「python-pptx フォールバックでこのまま進める」を確認する。
 
 ## Phase 2: 撮影 + 全数目視検証
 
@@ -116,19 +126,31 @@ Phase 6  納品 & 完了報告
 - 手順の文章は [references/manual-structure.md](references/manual-structure.md) の文体規則に従う
   (1 手順 1 動作・「操作します → 表示されます」形式・専門用語ブラックリスト)。
 
-## Phase 4: PPTX 生成
+## Phase 4: PPTX 生成 (2 トラック)
 
-[references/pptx-design.md](references/pptx-design.md) を読んでから書く。要点:
+**Track A (推奨) — Anthropic 公式 pptx スキル**が導入済みならそれで生成する
+(claude.ai の PowerPoint 生成と同系統。PptxGenJS ベースでデザイン品質が高い):
+
+- 公式スキルの SKILL.md と作成ガイドを読み込み、その流儀で生成スクリプトを書く。
+- ただし**本スキルの要件が常に優先**: 章構成・文体は
+  [references/manual-structure.md](references/manual-structure.md) / スクショの縦横比厳守 /
+  コールアウトは Phase 2 の boundingBox から座標計算した編集可能シェイプ /
+  アクセント色はアプリのブランド色 / 日本語フォントを全テキストに明示
+  (これらの要件定義: [references/pptx-design.md](references/pptx-design.md) §0)。
+- 公式スキルのデザイン提案 (パレット・レイアウト) は「操作マニュアル」の文脈で取捨する —
+  営業資料的な演出 (巨大な数字・ヒーロー画像) より、画面の見やすさと手順の追いやすさが優先。
+
+**Track B (フォールバック) — python-pptx**。公式スキルが使えない環境
+(オフライン・プラグイン導入不可) 用。[references/pptx-design.md](references/pptx-design.md) を
+読んでから書く。要点:
 
 - 実行環境: `uv` があれば `uv run --with python-pptx build_pptx.py`。なければワークスペース内に
   venv を作って `pip install python-pptx` (グローバル環境を汚さない)。
-- 生成スクリプト `build_pptx.py` はワークスペースに保存する (差分更新で再利用する)。
 - 冒頭でトークン定義 (色・フォント・余白・グリッド) を宣言し、全レイアウト関数はトークンだけを参照する。
-- 章構成は [references/manual-structure.md](references/manual-structure.md) のテンプレートに従う
-  (表紙 → 改訂履歴 → 本書について → 画面マップ → 機能章 (章扉 + 画面概要 + 操作手順) → FAQ → 用語集)。
 - 日本語フォントは `a:ea` (East Asian typeface) を XML で明示設定する — `run.font.name` だけでは
   日本語が既定フォントに落ちる (pptx-design.md にヘルパーあり)。
-- コールアウトの座標は Phase 2 の boundingBox から計算して置く (画像の配置矩形に比例変換)。
+
+どちらのトラックでも、生成スクリプトはワークスペースに保存する (差分更新で再利用する)。
 
 ## Phase 5: 視覚セルフレビュー + 網羅検査
 

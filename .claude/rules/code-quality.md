@@ -1,10 +1,11 @@
 # 実装品質基準
 
-> v2.0.0 · Source: `claudeknowledge` repo → `rules/code-quality.md`。編集はリポジトリ側で行い、`rules/install.sh` で反映する。
+> v2.1.0 · Source: `claudeknowledge` repo → `rules/code-quality.md`。編集はリポジトリ側で行い、`rules/install.sh` で反映する。
 
 `/quality-audit` が事後に検出する問題を、実装段階でゼロにするための基準。
 「書いた後に直す」ではなく「最初から正しく書く」。
-役割分担: FABLE (`fable-core.md`) が「進め方の規律」、このファイルが「良いコードの基準」—
+役割分担: FABLE (`fable-core.md`) が「進め方の規律」、`design-quality.md` が「良い設計・仕様書の基準」
+(設計段階での監査先取り)、このファイルが「良いコードの基準」—
 FABLE の L (増分実装)・E (検証・セルフレビュー) はこのファイルを基準として適用する。
 
 ## 実装前 (毎回必ず)
