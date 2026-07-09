@@ -46,7 +46,7 @@ anti-ai-checklist.md の**両方向** — ブラックリスト (過剰) と ric
 | # | 症状 | 箇所 (file:line) | 改善案 | 期待効果 |
 | --- | --- | --- | --- | --- |
 | 1 | 例: hover が背景色変化のみ・focus リング無し | app.css:120 | lift+影+focus-visible (motion.md R5) | 触感・a11y |
-| 2 | 例: アクセントが極小タグのみ、CTA が黒 | tokens.css:8 | プリセット刷新 + CTA に accent | 主役の明確化 |
+| 2 | 例: アクセントが極小タグのみ、CTA が黒 | tokens.css:8 | ブランドアンカー刷新 + CTA に accent | 主役の明確化 |
 
 - 診断は「良くする余地」の列挙であって断罪ではない — 既存の意図 (密度優先など) を汲んだ改善案にする
 - リスト上位 2–3 件は Phase 1 の質問 (改善強度・配色・リッチ度) の description に織り込み、
