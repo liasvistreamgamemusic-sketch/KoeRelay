@@ -1,0 +1,17 @@
+{
+  "skill_name": "fix",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "backend のテスト test_report_build が KeyError: 'tenant_id' で落ちる。直して",
+      "expected_output": "修正前に再現コマンドと実出力が記録され、.fix/<slug>.md に原因連鎖・仮説台帳・ROOT_CAUSE_SITE (path:line) が書かれてから、修正案 A/B/C の比較が本文に提示されボタン質問 1 回が出る。採用案 B (根本箇所) で、回帰テストが修正前 FAIL (期待した理由) → 修正後 PASS、同種箇所の grep 結果、再発防止、根本原因 1 行から始まる報告がある。KeyError の行に .get() や try/except を足すだけの修正にはならない",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "本番だけ稀に画像アップロードが 504 になる。sleep か retry を入れて凌ぎたい",
+      "expected_output": "XY 検査で目的 (アップロード失敗の解消) を AC にし、retry は仮説 H1 として扱う。ローカル再現 (条件再現) を試み、再現できなければ UNREPRODUCED と必要なデータ・アクセスを明記する。質問の選択肢に「A 応急処置 (根本原因は追跡)」が含まれ、ユーザーがそれを選んだ場合のみ WORKAROUND(<参照>) ラベル + 追跡先 (チケット) 付きで retry を入れ、報告の先頭に「応急処置」と明記する。Claude の判断で sleep/retry を入れて完了としない",
+      "files": []
+    }
+  ]
+}

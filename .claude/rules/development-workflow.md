@@ -16,7 +16,10 @@
    or **planner** agent (+ **architect** for system design) before any coding.
 3. **Implement with TDD** where a test harness exists (**tdd-guide** agent for
    new features and bugfixes): red → green → refactor. Target ~80% coverage on
-   new code.
+   new code. Bug fixes (unknown cause, failing test, CI failure, "works wrong")
+   go through the **fix** skill first — reproduce → causal chain → root-cause
+   gate (`ROOT_CAUSE_SITE`) → fix options → regression test — so the fix lands
+   at the root, not at the symptom.
 4. **Self-review** the full diff: FABLE §5 hostile self-review, applying the
    `code-quality.md` checklist.
 5. **Code review** — T2+: **code-reviewer** agent. Address CRITICAL/HIGH before

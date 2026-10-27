@@ -1,4 +1,4 @@
-source: claudeknowledge d868acb
-exported: 2026-07-09 09:51
-options: with-gitlab=false with-redmine=false
+source: claudeknowledge a83edc7
+exported: 2026-10-27 00:47
+options: with-gitlab=false with-redmine=false with-hooks=false
 update: re-run export-to-repo.sh from the claudeknowledge repo
