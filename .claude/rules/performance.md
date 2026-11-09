@@ -11,8 +11,6 @@ Current lineup (verified 2026-07-03): Claude 5 family (Fable 5, Sonnet 5), Opus 
 **Sonnet 5** (`claude-sonnet-5`) — default workhorse:
 - Main development work and day-to-day coding
 - Orchestrating multi-agent workflows
-- Pair with the FABLE framework (`rules/fable-core.md`) to close the
-  discipline gap with top-tier models
 
 **Opus 4.8** (`claude-opus-4-8`) — deep reasoning:
 - Complex debugging, architectural decisions

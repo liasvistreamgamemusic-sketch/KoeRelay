@@ -1,12 +1,11 @@
 # 実装品質基準
 
-> v2.1.0 · Source: `claudeknowledge` repo → `rules/code-quality.md`。編集はリポジトリ側で行い、`rules/install.sh` で反映する。
+> v2.2.0 · Source: `claudeknowledge` repo → `rules/code-quality.md`。編集はリポジトリ側で行い、`rules/install.sh` で反映する。
 
 `/quality-audit` が事後に検出する問題を、実装段階でゼロにするための基準。
 「書いた後に直す」ではなく「最初から正しく書く」。
-役割分担: FABLE (`fable-core.md`) が「進め方の規律」、`design-quality.md` が「良い設計・仕様書の基準」
-(設計段階での監査先取り)、このファイルが「良いコードの基準」—
-FABLE の L (増分実装)・E (検証・セルフレビュー) はこのファイルを基準として適用する。
+役割分担: 進め方 (設計・計画・TDD・デバッグ・検証・レビュー) は Superpowers (`superpowers-profile.md`)、
+このファイルは「良いコードの基準」— Superpowers の実装・検証・レビューの各段階は、このファイルを基準として適用する。
 
 ## 実装前 (毎回必ず)
 
@@ -119,7 +118,7 @@ FABLE の L (増分実装)・E (検証・セルフレビュー) はこのファ�
 **まずツールを回す** (fail-fast の順): lint (`--fix` 適用) → 型チェック / build → テスト。
 グリーンでない状態でコミットしない。機械が捕まえられる問題を人力レビューに持ち込まない。
 
-そのうえで diff を敵対的に精読する (FABLE §5 の観点で):
+そのうえで diff を敵対的に精読する (`superpowers:verification-before-completion` / `superpowers:requesting-code-review` と併せて):
 
 1. ハードコーディングした値がないか / 新設した環境変数が全ての環境定義に揃っているか
 2. 既存 util を再実装していないか / 同じロジックを別の場所にも書いていないか
