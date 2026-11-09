@@ -1,4 +1,5 @@
-source: claudeknowledge a83edc7
-exported: 2026-10-27 00:47
+source: claudeknowledge 1fe6426
+exported: 2026-11-09 01:10
+profile: superpowers
 options: with-gitlab=false with-redmine=false with-hooks=false
 update: re-run export-to-repo.sh from the claudeknowledge repo
